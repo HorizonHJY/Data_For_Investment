@@ -50,6 +50,7 @@ def P_f_s():
     Port = np.ones((T,))  # define this T-vector to store the returns on the portfolio
     # to be compatible with rf
     Port[0] = np.dot(w10, Re[0]) + rf[0]  # return in the first period, the weight on rf is absorbed
+    print(Port.shape, w10.shape, rf.shape)
     # into the previous excess return term, see formulas in the slides
     for t in range(T):
         Port[t] = np.dot(w10, Re[t]) + rf[t]
@@ -65,7 +66,7 @@ def P_f_s():
     print("Annualized Standard Deviation: {:.5f}".format(annualized_std))
     print("Annualized Sharpe Ratio: {:.5f}".format(SharpeP))
     print("-" * 50)
-# P_f_s()
+P_f_s()
 def P_f_t():
     df = pd.read_excel('../Data/Factors_July26_July11.xlsx')
     mkt = df.loc[:, "mkt"] / 100
@@ -107,4 +108,4 @@ def P_f_4():
     p1 = plt.plot(CC)
     plt.show()
 
-P_f_4()
+# P_f_4()

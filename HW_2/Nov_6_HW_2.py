@@ -29,8 +29,8 @@ VI = np.linalg.inv(V10)  # The inverse of V
 # The optimal weights on the 5 risky aasets
 gamma = 3  # The risk-averse coeff.
 w10 = (1 / gamma) * VI @ mu10  # an alternative:  np.matmul(VI, mu10)
-con_w = []
-no_con_w = []
+con_w = np.ones(1)
+no_con_w = np.ones(1)
 def q_one_1():
     global con_w, no_con_w
     # Compute the the Opt Port under bound constraints
@@ -64,19 +64,28 @@ def q_one_1():
     print('\n The Optimal wights on the 10 assets with no constraints, using Solvers instead of formula  \n ')
     print(no_con_w.T)
     print(type(no_con_w.T))
-
 q_one_1()
+# print(con_w.shape)
+# con_w = con_w.reshape(-1)
+# print(con_w.shape)
+
 def q_one_2():
+    global con_w
     Port = np.ones((T,))  # define this T-vector to store the returns on the portfolio
     # to be compatible with rf
-    Port[0] = np.dot(con_w.T, Re[0]) + rf[0]  # return in the first period, the weight on rf is absorbed
+    con_w = con_w.reshape(-1)
+    print(con_w)
+    print(Port.shape, con_w.shape, rf.shape)
+    Port[0] = np.dot(con_w, Re[0]) + rf[0]  # return in the first period, the weight on rf is absorbed
     # into the previous excess return term, see formulas in the slides
+
     for t in range(T):
-        Port[t] = np.dot(con_w.T, Re[t]) + rf[t]
+        Port[t] = np.dot(con_w, Re[t]) + rf[t]
     ExPort = Port - rf  # excess return of the optimla portfolio
     muP = ExPort.mean()
     sigP = calculate_sigma(ExPort)
     SharpeP = np.sqrt(12) * muP / sigP
+    print(ExPort.shape, Port.shape, rf.shape)
     # print(ExPort.shape, Port.shape, rf.shape)  # double check the vectors are cpmpatible
     annualized_mean = (1 + muP) ** 12 - 1  # annualized mean
     annualized_std = sigP * np.sqrt(12)  # annualized std
