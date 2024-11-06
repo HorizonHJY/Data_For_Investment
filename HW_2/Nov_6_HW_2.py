@@ -32,6 +32,7 @@ gamma = 3  # The risk-averse coeff.
 w10 = (1 / gamma) * VI @ mu10  # an alternative:  np.matmul(VI, mu10)
 con_w = np.ones(1)
 no_con_w = np.ones(1)
+
 def q_one_1():
     global con_w, no_con_w
     # Compute the the Opt Port under bound constraints
@@ -113,6 +114,61 @@ def q_one_3():
     print("Annualized Standard Deviation: {:.5f}".format(annualized_std))
     print("Annualized Sharpe Ratio: {:.5f}".format(SharpeP))
     print("-" * 50)
+# q_one_3()
 
 
-q_one_3()
+def q_one_4():
+    df = pd.read_excel('../Data/Factors_July26_July11.xlsx')
+    mkt = df.loc[:, "mkt"] / 100 -rf
+    mu = mkt.mean()  # The expected mkt excess return
+    sig2 = mkt.var()  # The var of the mkt excess return
+    sigma = np.sqrt(sig2)  # Its vol
+    Sharpe = mu / sigma
+    # Annualize the mean and standard deviation
+    annualized_mean_mkt = (1 + mu) ** 12 - 1  # Annualized mean return
+    annualized_std_mkt = sigma * np.sqrt(12)  # Annualized standard deviation
+    Sharpe_mkt = np.sqrt(12) * mu / sigma  # Annualized Sharpe Ratio
+    print("\nMarket Portfolio Metrics:")
+    print("Annualized Mean Return: {:.5f}".format(annualized_mean_mkt))
+    print("Annualized Standard Deviation: {:.5f}".format(annualized_std_mkt))
+    print("Annualized Sharpe Ratio: {:.5f}".format(Sharpe_mkt))
+    print("-" * 50)
+
+# q_one_4()
+
+def q_one_5():
+    global con_w,no_con_w
+    # Compute the accu returns of the opt port and the mkt
+    C_Port = np.ones((T,))
+    no_con_w = no_con_w.reshape(-1)
+    con_w = con_w.reshape(-1)
+    # into the previous excess return term, see formulas in the slides
+
+    for t in range(T):
+        Port[t] = np.dot(no_con_w, Re[t]) + rf[t]
+        C_Port[t] = np.dot(con_w, Re[t]) + rf[t]
+
+    CC_Port = np.ones((T,))  # to store the accumulative returns
+    CC_C_Port =  np.ones((T,))
+    CC = np.ones((T,))  # to store the accumulative returns
+
+    mkt2 = mkt + rf  # Add back riskfree rate to get pure mkt return
+
+    CC_C_Port[0] = 1 + C_Port[0]
+    CC_Port[0] = 1 + Port[0]  # initial accu return
+    CC[0] = 1 + mkt2[0]  # initial accu return
+
+    for t in range(T - 1):
+        CC_Port[t + 1] = CC_Port[t] * (1 + Port[t + 1])
+        CC[t + 1] = CC[t] * (1 + mkt2[t + 1])
+        CC_C_Port[t + 1] = CC_C_Port[t] * (1 + C_Port[t + 1])
+        print(CC_C_Port[t],CC[t])
+
+    print('Terminal wealth in Opt Port and Mkt  \n')
+    p = plt.plot(CC_Port)
+    p1 = plt.plot(CC)
+    p2 = plt.plot(CC_C_Port)
+    plt.ylim(0, 1e3)
+    plt.show()
+
+q_one_5()
