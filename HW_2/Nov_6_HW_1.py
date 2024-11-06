@@ -66,15 +66,14 @@ def P_f_s():
     print("Annualized Standard Deviation: {:.5f}".format(annualized_std))
     print("Annualized Sharpe Ratio: {:.5f}".format(SharpeP))
     print("-" * 50)
-P_f_s()
+# P_f_s()
 def P_f_t():
     df = pd.read_excel('../Data/Factors_July26_July11.xlsx')
-    mkt = df.loc[:, "mkt"] / 100
+    mkt = df.loc[:, "mkt"] / 100 -rf
     mu = mkt.mean()  # The expected mkt excess return
     sig2 = mkt.var()  # The var of the mkt excess return
     sigma = np.sqrt(sig2)  # Its vol
-    Sharpe = np.sqrt(12) * mu / sigma
-    print("Market Portfolio Sharpe Ratio: {:.5f}".format(Sharpe))
+    Sharpe = mu / sigma
     # Annualize the mean and standard deviation
     annualized_mean_mkt = (1 + mu) ** 12 - 1  # Annualized mean return
     annualized_std_mkt = sigma * np.sqrt(12)  # Annualized standard deviation
@@ -84,6 +83,8 @@ def P_f_t():
     print("Annualized Standard Deviation: {:.5f}".format(annualized_std_mkt))
     print("Annualized Sharpe Ratio: {:.5f}".format(Sharpe_mkt))
     print("-" * 50)
+
+P_f_t()
 
 def P_f_4():
     # Compute the accu returns of the opt port and the mkt

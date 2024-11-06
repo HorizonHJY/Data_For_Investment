@@ -16,6 +16,7 @@ R1 = np.array(R1)  # convert list to array to apply np.functions, T x 10
 rf = np.array(rf)  # convert list to array to apply np.functions, a T-vector
 # note: T, is not Tx1 in Python as the latter is 2-dim
 T = len(df)  # The number of observations
+Port = np.ones((T,))  # define this T-vector to store the returns on the portfolio
 Re = np.ones((T, 10))  # creat storage for excess returns
 for i in range(10):
     Re[:, i] = R1[:, i] - rf  # the excess return:  each indu substracts riskfree rate, Re[:,i]-rf
@@ -63,7 +64,7 @@ def q_one_1():
     no_con_w = np.array(sol1['x'])
     print('\n The Optimal wights on the 10 assets with no constraints, using Solvers instead of formula  \n ')
     print(no_con_w.T)
-    print(type(no_con_w.T))
+    # print(type(no_con_w.T))
 q_one_1()
 # print(con_w.shape)
 # con_w = con_w.reshape(-1)
@@ -71,14 +72,12 @@ q_one_1()
 
 def q_one_2():
     global con_w
-    Port = np.ones((T,))  # define this T-vector to store the returns on the portfolio
     # to be compatible with rf
     con_w = con_w.reshape(-1)
-    print(con_w)
-    print(Port.shape, con_w.shape, rf.shape)
+    # print(con_w)
+    # print(Port.shape, con_w.shape, rf.shape)
     Port[0] = np.dot(con_w, Re[0]) + rf[0]  # return in the first period, the weight on rf is absorbed
     # into the previous excess return term, see formulas in the slides
-
     for t in range(T):
         Port[t] = np.dot(con_w, Re[t]) + rf[t]
     ExPort = Port - rf  # excess return of the optimla portfolio
@@ -95,4 +94,25 @@ def q_one_2():
     print("Annualized Sharpe Ratio: {:.5f}".format(SharpeP))
     print("-" * 50)
 
-q_one_2()
+# q_one_2()
+
+def q_one_3():
+    global no_con_w
+    no_con_w = no_con_w.reshape(-1)
+    for t in range(T):
+        Port[t] = np.dot(no_con_w, Re[t]) + rf[t]
+    ExPort = Port - rf  # excess return of the optimla portfolio
+    muP = ExPort.mean()
+    sigP = calculate_sigma(ExPort)
+    SharpeP = np.sqrt(12) * muP / sigP
+    # print(ExPort.shape, Port.shape, rf.shape)  # double check the vectors are cpmpatible
+    annualized_mean = (1 + muP) ** 12 - 1  # annualized mean
+    annualized_std = sigP * np.sqrt(12)  # annualized std
+    print("\nOptimal Portfolio Metrics:")
+    print("Annualized Mean Return: {:.5f}".format(annualized_mean))
+    print("Annualized Standard Deviation: {:.5f}".format(annualized_std))
+    print("Annualized Sharpe Ratio: {:.5f}".format(SharpeP))
+    print("-" * 50)
+
+
+q_one_3()
