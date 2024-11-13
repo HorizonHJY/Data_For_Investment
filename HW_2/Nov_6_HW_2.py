@@ -53,14 +53,12 @@ def q_one_1():
     # print(G2)
     G = np.append(G1, G2, axis=0)
     G = matrix(G)
-    # print(G1)
-    # print(G)
     solvers.options['show_progress'] = False  # this prevent print progress data
     sol = solvers.qp(Q, q, G, h)  # Format:  solvers.qp(Q, q, G, h, A, b)
     con_w = np.array(sol['x'])
     print('The Optimal wights on the 10 assets with constraints: 0 <=   <=.4 \n')
     np.set_printoptions(formatter={'float': '{: 0.4f}'.format})
-    # print(f"sola is {con_w.T}")
+    print(f"{con_w.T}")
     sol1 = solvers.qp(Q, q)  # using the solver for the unconstrained solution
     no_con_w = np.array(sol1['x'])
     print('\n The Optimal wights on the 10 assets with no constraints, using Solvers instead of formula  \n ')
@@ -95,7 +93,7 @@ def q_one_2():
     print("Annualized Sharpe Ratio: {:.5f}".format(SharpeP))
     print("-" * 50)
 
-# q_one_2()
+q_one_2()
 
 def q_one_3():
     global no_con_w
@@ -113,8 +111,7 @@ def q_one_3():
     print("Annualized Mean Return: {:.5f}".format(annualized_mean))
     print("Annualized Standard Deviation: {:.5f}".format(annualized_std))
     print("Annualized Sharpe Ratio: {:.5f}".format(SharpeP))
-    print("-" * 50)
-# q_one_3()
+q_one_3()
 
 
 def q_one_4():
@@ -132,9 +129,8 @@ def q_one_4():
     print("Annualized Mean Return: {:.5f}".format(annualized_mean_mkt))
     print("Annualized Standard Deviation: {:.5f}".format(annualized_std_mkt))
     print("Annualized Sharpe Ratio: {:.5f}".format(Sharpe_mkt))
-    print("-" * 50)
 
-# q_one_4()
+q_one_4()
 
 def q_one_5():
     global con_w,no_con_w
@@ -162,7 +158,7 @@ def q_one_5():
         CC_Port[t + 1] = CC_Port[t] * (1 + Port[t + 1])
         CC[t + 1] = CC[t] * (1 + mkt2[t + 1])
         CC_C_Port[t + 1] = CC_C_Port[t] * (1 + C_Port[t + 1])
-        print(CC_C_Port[t],CC[t])
+        # print(CC_C_Port[t],CC[t])
 
     print('Terminal wealth in Opt Port and Mkt  \n')
     p = plt.plot(CC_Port)
