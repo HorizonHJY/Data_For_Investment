@@ -88,10 +88,18 @@ def P_O_T():
 
 # P_O_T()
 def P_O_Tr():
-    x = np.array(mkt)
-    x.shape = (T, 1)  # make sure the dimentionality
+
+    # x = np.array(mkt)
+    # x.shape = (T, 1)  # make sure the dimentionality
+    A1 = eigvecs_sorted[:, 0]  # Coefficients of the first PCA
+    mu10 = np.mean(Re, axis=0).reshape(1, 10)  # Mean returns (1x10)
+    onesT = np.ones((T, 1))  # T x 1 matrix of ones
+    RR = Re - onesT @ mu10  # De-mean the returns (T x 10)
+    f = RR @ A1  # First PCA factor (T x 1)
+
+    f = f.reshape(-1, 1)  # Ensure it is a column vector
     const = np.ones((T, 1))  # The constant part
-    xx = np.hstack((const, x))  # Add the constant part to x
+    xx = np.hstack((const, f))  # Combine constant and PCA factor (T x 2)
     R2 = np.ones((10, 1))  # to store the R-squares
     for i in range(10):
         y = np.array(Re[:, i])  # The i-th excess asset return
@@ -99,10 +107,10 @@ def P_O_Tr():
         reg = sm.OLS(endog=y, exog=xx)
         results = reg.fit()
         R2[i] = results.rsquared_adj
-    AvR2 = np.dot(ones10, R2) / 10
+    # AvR2 = np.dot(ones10, R2) / 10
     print('The adjusted R^2 of the mkt factor on the first PCA \n')
     print(R2)
-    print('  \n  the average \n')
-    print(AvR2)
+    # print('  \n  the average \n')
+    # print(AvR2)
 
 P_O_Tr()
