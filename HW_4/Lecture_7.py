@@ -110,7 +110,38 @@ def P_O_Tr():
     # AvR2 = np.dot(ones10, R2) / 10
     print('The adjusted R^2 of the mkt factor on the first PCA \n')
     print(R2)
+    return R2
     # print('  \n  the average \n')
     # print(AvR2)
 
-P_O_Tr()
+R2 = P_O_Tr()
+
+def P_O_F():
+
+    x = np.array(mkt)
+    x.shape = (T, 1)  # make sure the dimentionality
+    const = np.ones((T, 1))
+    xx = np.hstack((const, x))
+    R2_market = np.ones((10, 1))
+    for i in range(10):
+        y = np.array(Re[:, i])
+        reg = sm.OLS(endog=y, exog=xx)
+        results = reg.fit()
+        R2_market[i] = results.rsquared_adj
+    AvR2_market = np.mean(R2_market)
+
+    AvR2 = np.mean(R2)
+
+    print("\nComparison of the average adjusted R^2 between the market factor and the PCA factor:")
+    print(f"average adjusted R^2 market factor: {AvR2_market:.5f}, PCA factor: {AvR2:.5f}")
+    if AvR2 > AvR2_market:
+        print(
+            "The average adjusted R^2 of the PCA factor is higher, indicating better explanatory power compared to the market factor.")
+    elif AvR2 < AvR2_market:
+        print(
+            "The average adjusted R^2 of the market factor is higher, indicating better explanatory power compared to the PCA factor.")
+    else:
+        print(
+            "The average adjusted R^2 of the market factor and the PCA factor are equal, indicating similar explanatory power.")
+
+P_O_F()
