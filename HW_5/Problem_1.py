@@ -1,69 +1,97 @@
-import pandas as pd  # To load data, we use the package pandas
+import pandas as pd
 import numpy as np
-import statsmodels.api as sm  # We use this package to do statical estimation
-import statsmodels.formula.api as smf
+import statsmodels.api as sm
 
-# Load the data and define variables, 1926:12-2010:12
-
-df = pd.read_excel('../Data/Returns_handbook_Python_data.xlsx', 'Monthly')  # Monthly is the name of Sheet1
-
-# Market risk premium
-market_return = np.array(df.loc[672: 1679, "CRSP S&P 500 value-weighted return with dividends"])
-# 671th row is 1927:01 in the data
-# Excel row is 673 bc/ Python does not count header and starts from 0
-r_f_lag = np.array(df.loc[671: 1678, "Risk-free rate"])
-equity_premium = market_return - r_f_lag  # excess return
-  # Predictors
-
-D12 = np.array(df.loc[671 : 1678,   "12-month moving sum of S&P 500 dividends"]); # dividends
-SP500 = np.array(df.loc[671 : 1678, "S&P 500 index"]);
-DP = np.log(D12) - np.log(SP500);                                # log dividend-price ratio
-SP500_lag = np.array(df.loc[671 : 1678, "S&P 500 index"]);   # S&P 500 index, lagged (1926:12-2010:11)
-DY = np.log(D12) - np.log(SP500_lag);       # log dividend yield
-E12 = np.array(df.loc[671 : 1678,      "12-month moving sum of S&P 500 earnings"]); # earnings
-EP = np.log(E12) - np.log(SP500);       # log earnings-price ratio
-DE = np.log(D12) - np.log(E12);        # log dividend-payout ratio
-SVAR = np.array(df.loc[671 : 1678, "Monthly sum of squared daily returns on S&P 500 index"]); # volatility
-BM = np.array(df.loc[671 : 1678, "DJIA book-to-market value ratio"]);   # book-to-market ratio
-NTIS = np.array(df.loc[671 : 1678, "Net equity expansion"]); # net equity issuing activity
-TBL = np.array(df.loc[671 : 1678, "3-month Treasury bill yield (secondary market)"]); # T-bill rate
-LTY = np.array(df.loc[671 : 1678, "Long-term government bond yield"]); # long-term government bond yield
-LTR = np.array(df.loc[671 : 1678, "Long-term government bond return"]); # long-term government bond return
-TMS = LTY - TBL; # term spread
-AAA = np.array(df.loc[671 : 1678, "Moodys AAA-rated corporate bond yield"]); # AAA-rated corporate bond yield
-BAA = np.array(df.loc[671 : 1678, "Moodys BAA-rated corporate bond yield"]); # BAA-rated corporate bond yield
-DFY = BAA - AAA; # default yield spread
-CORPR = np.array(df.loc[671 : 1678, "Long-term corporate bond return"]); # long-term corporate bond return
-DFR = CORPR - LTR; # default return spread
-INFL_lag = np.array(df.loc[671 : 1678, "CPI (all urban consumers) inflation rate"]); # inflation, lagged (1926:12-2010:11)
-N = 14;
-T = 1008
-ECON = np.vstack((DP, DY, EP, DE, SVAR, BM, NTIS, TBL, LTY, LTR, TMS, DFY, DFR, INFL_lag)).T;
-# print(ECON.shape), one should get (1008* 14)
-
-y = np.array(equity_premium)
-y.shape = (T, 1)  # make sure the dimentionality
-
-onesT = np.ones((T, 1))  # The constant part
-
-coeff = np.ones((N, 2))  # to store all the alphas and betas
-tValues = np.ones((N, 2))
-R2a = np.ones((N, 1))
-
-for i in range(N):
-    x = ECON[:, i]  # i-th predictor
-    x = np.array(x)
-    x.shape = (T, 1)
-    xx = np.hstack((onesT, x))  # add the constant part to x
-    reg = sm.OLS(endog=y, exog=xx)
+def regression_analysis(y, x):
+    x_with_const = sm.add_constant(x)  # Add constant term
+    reg = sm.OLS(y, x_with_const)
     results = reg.fit()
-    coeff[i, :] = results.params  # paramter estimates, output of sm.OLS
-    tValues[i, :] = results.tvalues
-    R2a[i] = results.rsquared_adj
 
-slope = coeff[:, 1].reshape(-1, 1)  # another to make it N by 1 vector
-slopeTvalue = tValues[:, 1].reshape(-1, 1)
+    # Extract regression coefficients and significance
+    beta = results.params[1]
+    p_value = results.pvalues[1]
+    t_value = results.tvalues[1]
 
-Output = np.hstack((slope, slopeTvalue, R2a))
-print(' Slope, t-value, Adjusted R-sqaured   \n')
-print(Output)
+    return results, beta, p_value, t_value
+
+
+def analyze_significance(beta, p_value, t_value, alpha=0.05):
+    print(f"Beta: {beta:.10f}")
+    print(f"T-value: {t_value:.4f}")
+    print(f"P-value: {p_value:.4f}")
+
+    if p_value < alpha:
+        print(f"The Beta coefficient is significant at the {alpha*100:.0f}% level (p-value: {p_value:.4f}).")
+    else:
+        print(f"The Beta coefficient is NOT significant at the {alpha*100:.0f}% level (p-value: {p_value:.4f}).")
+
+
+def question_1(merged_df):
+    """
+    Question 1: Regress current stock returns Rt on market returns Rmkt,t
+    """
+    stock_excess_return = merged_df['Return'] - merged_df['3-month Treasury bill yield (secondary market)']
+    market_excess_return = merged_df['S&P 500 index'] - merged_df['3-month Treasury bill yield (secondary market)']
+    y = stock_excess_return.values.reshape(-1, 1)
+    x = market_excess_return.values.reshape(-1, 1)
+
+    results, beta, p_value, t_value = regression_analysis(y, x)
+
+    print("\nQuestion 1: Regression Results (Rt on Rmkt,t):")
+    print(results.summary())
+    analyze_significance(beta, p_value, t_value)
+
+
+def question_2(merged_df):
+    """
+    Question 2: Regress current stock returns Rt on lagged market returns Rmkt,t-1
+    """
+    merged_df['Market_Excess_Return_Lag'] = merged_df['S&P 500 index'].shift(1) - merged_df[
+        '3-month Treasury bill yield (secondary market)']
+    merged_df = merged_df.dropna()  # Remove missing values caused by lagging
+
+    stock_excess_return = merged_df['Return'] - merged_df['3-month Treasury bill yield (secondary market)']
+    market_excess_return_lag = merged_df['Market_Excess_Return_Lag']
+    y = stock_excess_return.values.reshape(-1, 1)
+    x = market_excess_return_lag.values.reshape(-1, 1)
+
+    results, beta, p_value, t_value = regression_analysis(y, x)
+
+    print("\nQuestion 2: Regression Results (Rt on Rmkt,t-1):")
+    print(results.summary())
+    analyze_significance(beta, p_value, t_value)
+
+
+def question_3(merged_df):
+    """
+    Question 3: Regress current stock returns Rt on lagged stock returns Rt-1
+    """
+    merged_df['Stock_Excess_Return_Lag'] = merged_df['Return'].shift(1) - merged_df[
+        '3-month Treasury bill yield (secondary market)']
+    merged_df = merged_df.dropna()  # Remove missing values caused by lagging
+
+    stock_excess_return = merged_df['Return'] - merged_df['3-month Treasury bill yield (secondary market)']
+    stock_excess_return_lag = merged_df['Stock_Excess_Return_Lag']
+    y = stock_excess_return.values.reshape(-1, 1)
+    x = stock_excess_return_lag.values.reshape(-1, 1)
+
+    results, beta, p_value, t_value = regression_analysis(y, x)
+
+    print("\nQuestion 3: Regression Results (Rt on Rt-1):")
+    print(results.summary())
+    analyze_significance(beta, p_value, t_value)
+
+
+# Load data
+ibm_df = pd.read_excel('../Data/IBM.xlsx')
+market_df = pd.read_excel('../Data/Returns_handbook_Python_data.xlsx', sheet_name='Monthly')
+
+# Merge data
+ibm_df['YearMonth'] = ibm_df['Date'].astype(str).str[:6].astype(int)
+market_df['YearMonth'] = market_df['Date (yyyymm)']
+merged_df = pd.merge(ibm_df, market_df, on='YearMonth', how='inner')
+
+# Run the questions
+# question_1(merged_df)
+# question_2(merged_df)
+question_3(merged_df)

@@ -2,52 +2,106 @@ import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 
-# 加载数据
-# 股票数据（IBM）
-ibm_df = pd.read_excel('../Data/IBM.xlsx')
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
 
-# 市场数据
+
+def regression_analysis(y, x):
+    """
+    回归分析函数
+    参数：
+        y: 因变量（被解释变量）
+        x: 自变量（解释变量）
+    返回：
+        回归结果、Beta 值、p 值
+    """
+    x_with_const = sm.add_constant(x)  # 添加常数项
+    reg = sm.OLS(y, x_with_const)
+    results = reg.fit()
+
+    # 提取回归系数和显著性
+    beta = results.params[1]
+    p_value = results.pvalues[1]
+
+    return results, beta, p_value
+
+
+def question_1(merged_df):
+    """
+    问题 1: 使用市场回报 Rmkt,t 回归当前股票回报 Rt
+    """
+    stock_excess_return = merged_df['Return'] - merged_df['3-month Treasury bill yield (secondary market)']
+    market_excess_return = merged_df['S&P 500 index'] - merged_df['3-month Treasury bill yield (secondary market)']
+    y = stock_excess_return.values.reshape(-1, 1)
+    x = market_excess_return.values.reshape(-1, 1)
+
+    results, beta, p_value = regression_analysis(y, x)
+
+    print("\nQuestion 1: Regression Results (Rt on Rmkt,t):")
+    print(results.summary())
+    if p_value < 0.05:
+        print(f"Beta is significant at the 5% level. Beta: {beta:.4f}, p-value: {p_value:.4f}")
+    else:
+        print(f"Beta is NOT significant at the 5% level. Beta: {beta:.4f}, p-value: {p_value:.4f}")
+
+
+def question_2(merged_df):
+    """
+    问题 2: 使用滞后的市场回报 Rmkt,t-1 回归当前股票回报 Rt
+    """
+    merged_df['Market_Excess_Return_Lag'] = merged_df['S&P 500 index'].shift(1) - merged_df[
+        '3-month Treasury bill yield (secondary market)']
+    merged_df = merged_df.dropna()  # 去除因滞后导致的缺失值
+
+    stock_excess_return = merged_df['Return'] - merged_df['3-month Treasury bill yield (secondary market)']
+    market_excess_return_lag = merged_df['Market_Excess_Return_Lag']
+    y = stock_excess_return.values.reshape(-1, 1)
+    x = market_excess_return_lag.values.reshape(-1, 1)
+
+    results, beta, p_value = regression_analysis(y, x)
+
+    print("\nQuestion 2: Regression Results (Rt on Rmkt,t-1):")
+    print(results.summary())
+    if p_value < 0.05:
+        print(f"Beta is significant at the 5% level. Beta: {beta:.4f}, p-value: {p_value:.4f}")
+    else:
+        print(f"Beta is NOT significant at the 5% level. Beta: {beta:.4f}, p-value: {p_value:.4f}")
+
+
+def question_3(merged_df):
+    """
+    问题 3: 使用滞后的股票回报 Rt-1 回归当前股票回报 Rt
+    """
+    merged_df['Stock_Excess_Return_Lag'] = merged_df['Return'].shift(1) - merged_df[
+        '3-month Treasury bill yield (secondary market)']
+    merged_df = merged_df.dropna()  # 去除因滞后导致的缺失值
+
+    stock_excess_return = merged_df['Return'] - merged_df['3-month Treasury bill yield (secondary market)']
+    stock_excess_return_lag = merged_df['Stock_Excess_Return_Lag']
+    y = stock_excess_return.values.reshape(-1, 1)
+    x = stock_excess_return_lag.values.reshape(-1, 1)
+
+    results, beta, p_value = regression_analysis(y, x)
+
+    print("\nQuestion 3: Regression Results (Rt on Rt-1):")
+    print(results.summary())
+    if p_value < 0.05:
+        print(f"Beta is significant at the 5% level. Beta: {beta:.4f}, p-value: {p_value:.4f}")
+    else:
+        print(f"Beta is NOT significant at the 5% level. Beta: {beta:.4f}, p-value: {p_value:.4f}")
+
+
+# 加载数据
+ibm_df = pd.read_excel('../Data/IBM.xlsx')
 market_df = pd.read_excel('../Data/Returns_handbook_Python_data.xlsx', sheet_name='Monthly')
 
-# 转换日期格式
-# IBM 数据日期为 YYYYMMDD 格式，需要截取年份和月份
+# 合并数据
 ibm_df['YearMonth'] = ibm_df['Date'].astype(str).str[:6].astype(int)
-
-# 市场数据日期为 YYYYMM 格式
 market_df['YearMonth'] = market_df['Date (yyyymm)']
-
-# 合并两份数据，按 YearMonth 对齐
 merged_df = pd.merge(ibm_df, market_df, on='YearMonth', how='inner')
 
-# 提取回报率和市场回报率
-stock_return = merged_df['Return']  # IBM 的回报率
-market_return = merged_df['S&P 500 index']  # S&P 500 的回报率
-
-# 市场无风险收益率
-risk_free_rate = merged_df['3-month Treasury bill yield (secondary market)']
-
-# 计算超额回报率
-stock_excess_return = stock_return - risk_free_rate
-market_excess_return = market_return - risk_free_rate
-
-# 回归分析
-y = stock_excess_return.values.reshape(-1, 1)  # 被解释变量
-x = market_excess_return.values.reshape(-1, 1)  # 解释变量
-x_with_const = sm.add_constant(x)  # 添加常数项
-
-# 运行回归
-reg = sm.OLS(y, x_with_const)
-results = reg.fit()
-
-# 显示结果
-print("Regression Results:")
-print(results.summary())
-
-# 提取 Beta 和显著性
-beta = results.params[1]  # Beta 系数
-p_value = results.pvalues[1]  # Beta 的 p 值
-
-if p_value < 0.05:
-    print(f"Beta is significant at the 5% level. Beta: {beta:.4f}, p-value: {p_value:.4f}")
-else:
-    print(f"Beta is NOT significant at the 5% level. Beta: {beta:.4f}, p-value: {p_value:.4f}")
+# 调用函数回答问题 1, 2, 3
+# question_1(merged_df)
+# question_2(merged_df)
+question_3(merged_df)
